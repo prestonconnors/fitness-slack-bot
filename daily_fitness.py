@@ -11,6 +11,7 @@ import argparse
 import json
 import os
 import random
+import subprocess
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -177,12 +178,52 @@ def pick_video(
     return details[chosen_id]
 
 
-def build_slack_message(format_name: str, weekday_name: str, video: Video) -> str:
-    return (
-        f":muscle: *{weekday_name} {format_name}* :muscle:\n"
-        f"<{video.url}|{video.title}> ({video.duration_human}) — {video.channel_title}\n"
-        f"Join me in #fitness — press play together!"
-    )
+DEFAULT_MESSAGE_TEMPLATE = (
+    ":muscle: *{weekday} {format}* :muscle:\n"
+    "<{url}|{title}> ({duration}) — {channel_title}\n"
+    "Join me in #fitness — press play together!"
+)
+
+
+def build_slack_message(
+    template: str, format_name: str, weekday_name: str, video: Video
+) -> str:
+    return template.format(
+        weekday=weekday_name,
+        format=format_name,
+        title=video.title,
+        url=video.url,
+        channel_title=video.channel_title,
+        duration=video.duration_human,
+        video_id=video.video_id,
+    ).rstrip("\n")
+
+
+def update_nginx_redirect(nginx_cfg: dict, video_url: str) -> None:
+    """Invoke the deploy/update_livestream_redirect.sh helper via sudo.
+
+    Failures are logged but never raise — a broken nginx update should not
+    prevent the Slack post from happening.
+    """
+    if not nginx_cfg or not nginx_cfg.get("enabled"):
+        return
+    cmd = list(nginx_cfg.get("command") or [])
+    if not cmd:
+        print("nginx.enabled is true but nginx.command is empty; skipping.", file=sys.stderr)
+        return
+    cmd.append(video_url)
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+    except (FileNotFoundError, subprocess.TimeoutExpired) as e:
+        print(f"nginx update failed to run: {e}", file=sys.stderr)
+        return
+    if result.stdout:
+        print(result.stdout.rstrip())
+    if result.returncode != 0:
+        print(
+            f"nginx update exited {result.returncode}: {result.stderr.rstrip()}",
+            file=sys.stderr,
+        )
 
 
 def post_to_slack(token: str, channel: str, text: str) -> dict:
@@ -230,11 +271,21 @@ def main() -> int:
         rng=rng,
     )
 
-    text = build_slack_message(
-        format_name=entry["format"],
-        weekday_name=weekday.capitalize(),
-        video=video,
-    )
+    template = config.get("message_template") or DEFAULT_MESSAGE_TEMPLATE
+    try:
+        text = build_slack_message(
+            template=template,
+            format_name=entry["format"],
+            weekday_name=weekday.capitalize(),
+            video=video,
+        )
+    except KeyError as e:
+        print(
+            f"Unknown placeholder {e} in message_template. "
+            "See config.yaml for the supported list.",
+            file=sys.stderr,
+        )
+        return 2
 
     print(text)
 
@@ -247,6 +298,8 @@ def main() -> int:
     if not token:
         print("SLACK_USER_TOKEN not set.", file=sys.stderr)
         return 2
+
+    update_nginx_redirect(config.get("nginx") or {}, video.url)
 
     resp = post_to_slack(token, channel, text)
     print(f"\nPosted to Slack: ts={resp.get('ts')} channel={resp.get('channel')}")

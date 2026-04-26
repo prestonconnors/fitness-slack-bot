@@ -1,0 +1,7 @@
+[Unit]
+Description=Pick a fitness video and post it to Slack
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/fitness-slack-bot
+ExecStart=%h/fitness-slack-bot/.venv/bin/python %h/fitness-slack-bot/daily_fitness.py

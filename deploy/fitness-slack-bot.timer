@@ -1,0 +1,9 @@
+[Unit]
+Description=Daily fitness Slack post (weekdays at 08:55 local time)
+
+[Timer]
+OnCalendar=Mon..Fri 08:55:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

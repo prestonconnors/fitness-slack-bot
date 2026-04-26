@@ -4,6 +4,28 @@
 
 history_days: 30
 
+# Optional: also update an nginx redirect (e.g. https://prestonconnors.com/livestream)
+# to point at the chosen video. Requires the helper script in deploy/ to be
+# installed as root and granted passwordless sudo. See README for setup.
+nginx:
+  enabled: true
+  # Command run via sudo. The chosen video URL is appended as the final argument.
+  command: ["sudo", "-n", "/usr/local/sbin/update_livestream_redirect.sh"]
+
+# Slack message template. Available placeholders:
+#   {weekday}         e.g. "Monday"
+#   {format}          e.g. "Pilates"
+#   {title}           video title
+#   {url}             video URL
+#   {channel_title}   YouTube channel name
+#   {duration}        formatted duration, e.g. "12:34"
+#   {video_id}        YouTube video id
+# Slack mrkdwn: *bold*, _italic_, <url|text> for links. Use \n for newlines.
+message_template: |
+  :muscle: *{weekday} {format}* :muscle:
+  <{url}|{title}> ({duration}) — {channel_title}
+  Join me in #fitness — press play together!
+
 # Optional fallback used when today's weekday has no entry below.
 default:
   format: "Calisthenics + HIIT"
