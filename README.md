@@ -154,6 +154,40 @@ runs `nginx -t`, and reloads nginx (rolling back the file on test failure).
 If the helper isn't installed (or sudo isn't configured), the Python script
 prints a warning and continues — the Slack post still happens.
 
+## One-time backfill: sort existing livestreams into the playlists
+
+If you have hundreds of past live broadcasts on your channel and want them
+auto-sorted into the per-weekday playlists used above, run
+[sort_livestreams_into_playlists.py](sort_livestreams_into_playlists.py).
+It groups each live broadcast by the weekday of its `actualStartTime`
+(in America/New_York) and adds it to the matching playlist from `config.yaml`.
+
+This script needs OAuth (writes to your playlists), not just the API key:
+
+1. Cloud Console → APIs & Services → Credentials → Create Credentials →
+   **OAuth client ID** → *Desktop app*. Download the JSON.
+2. Save it as `oauth_client_secret.json` next to the script
+   (already in `.gitignore`).
+3. Run a dry-run first:
+
+   ```bash
+   source .venv/bin/activate
+   python sort_livestreams_into_playlists.py --verbose
+   ```
+
+   The first run opens a browser to consent; refresh tokens are stored in
+   `oauth_token.json`. On a headless server, you can run the OAuth step
+   locally first and copy `oauth_token.json` to the server.
+4. When the dry-run plan looks right, apply it:
+
+   ```bash
+   python sort_livestreams_into_playlists.py --apply
+   ```
+
+Useful flags: `--since 2024-01-01`, `--until 2025-01-01`, `--limit 50`.
+
+Videos already in any of the target playlists are skipped, so re-running is safe.
+
 ## Troubleshooting
 
 - `YOUTUBE_API_KEY not set` — populate `.env` (copied from `.env.example`).

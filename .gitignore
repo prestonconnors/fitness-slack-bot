@@ -4,6 +4,8 @@ __pycache__/
 *.pyc
 .env
 history.json
+oauth_client_secret.json
+oauth_token.json
 *.log
 .vscode/
 .idea/
