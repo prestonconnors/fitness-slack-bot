@@ -28,11 +28,17 @@ fi
 
 NEW_URL="$1"
 
-# Validate URL: https only, no whitespace or shell metacharacters.
-if [[ ! "$NEW_URL" =~ ^https://[A-Za-z0-9._~:/?#@!$\&\'()*+,;=%-]+$ ]]; then
-  echo "refusing to write suspicious URL: $NEW_URL" >&2
-  exit 65
-fi
+# Validate URL: https only, and reject whitespace / shell metacharacters / quotes.
+case "$NEW_URL" in
+  https://*) : ;;
+  *) echo "refusing non-https URL: $NEW_URL" >&2; exit 65 ;;
+esac
+case "$NEW_URL" in
+  *[[:space:]]* | *\<* | *\>* | *\"* | *\'* | *\`* | *\\* | *\$* | *\|* | *\;* | *\&* )
+    echo "refusing URL with disallowed characters: $NEW_URL" >&2
+    exit 65
+    ;;
+esac
 
 if [[ ! -f "$SITE_FILE" ]]; then
   echo "site file not found: $SITE_FILE" >&2
