@@ -32,6 +32,21 @@ YT_PLAYLIST_ITEMS = "https://www.googleapis.com/youtube/v3/playlistItems"
 YT_VIDEOS = "https://www.googleapis.com/youtube/v3/videos"
 
 
+def _yt_get(url: str, params: dict) -> dict:
+    """GET a YouTube Data API endpoint and surface error.message on failure."""
+    r = requests.get(url, params=params, timeout=30)
+    if not r.ok:
+        msg = f"HTTP {r.status_code}"
+        try:
+            err = r.json().get("error", {})
+            reason = (err.get("errors") or [{}])[0].get("reason")
+            msg = f"{msg} ({reason}): {err.get('message', r.text[:200])}"
+        except ValueError:
+            msg = f"{msg}: {r.text[:200]}"
+        raise RuntimeError(f"YouTube API error — {msg}")
+    return r.json()
+
+
 @dataclass
 class Video:
     video_id: str
@@ -98,9 +113,7 @@ def fetch_playlist_video_ids(api_key: str, playlist_id: str) -> list[str]:
         }
         if page_token:
             params["pageToken"] = page_token
-        r = requests.get(YT_PLAYLIST_ITEMS, params=params, timeout=30)
-        r.raise_for_status()
-        data = r.json()
+        data = _yt_get(YT_PLAYLIST_ITEMS, params)
         for item in data.get("items", []):
             vid = item.get("contentDetails", {}).get("videoId")
             if vid:
@@ -121,9 +134,8 @@ def fetch_video_details(api_key: str, video_ids: Iterable[str]) -> dict[str, Vid
             "id": ",".join(chunk),
             "key": api_key,
         }
-        r = requests.get(YT_VIDEOS, params=params, timeout=30)
-        r.raise_for_status()
-        for item in r.json().get("items", []):
+        r = _yt_get(YT_VIDEOS, params)
+        for item in r.get("items", []):
             status = item.get("status", {})
             # Skip unavailable / private / non-embeddable
             if status.get("privacyStatus") not in ("public", "unlisted"):
