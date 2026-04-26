@@ -98,8 +98,15 @@ systemctl --user start fitness-slack-bot.service
 journalctl --user -u fitness-slack-bot.service -n 50
 ```
 
-Edit `deploy/fitness-slack-bot.timer`'s `OnCalendar=` line to change the schedule
-(e.g. `Mon..Fri 08:55:00`), then re-install and `systemctl --user daemon-reload`.
+Edit `deploy/fitness-slack-bot.timer`'s `OnCalendar=` line to change the schedule.
+The shipped value `Mon..Fri 08:55 America/New_York` runs at 08:55 Eastern regardless of
+the server's system timezone (handles DST automatically). After editing, re-install and:
+
+```bash
+install -m 0644 deploy/fitness-slack-bot.timer ~/.config/systemd/user/fitness-slack-bot.timer
+systemctl --user daemon-reload
+systemctl --user restart fitness-slack-bot.timer
+```
 
 View logs anytime:
 
