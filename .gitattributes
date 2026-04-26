@@ -1,0 +1,7 @@
+# Default: let git auto-detect text vs binary.
+* text=auto
+
+# Always use LF for files that run on Linux.
+*.sh   text eol=lf
+*.service text eol=lf
+*.timer   text eol=lf
