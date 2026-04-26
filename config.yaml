@@ -1,0 +1,27 @@
+# Map weekdays to a fitness format and YouTube playlist.
+# Weekday keys: monday, tuesday, wednesday, thursday, friday, saturday, sunday
+# A video stays "recently used" for `history_days` days before it can be picked again.
+
+history_days: 30
+
+# Optional fallback used when today's weekday has no entry below.
+default:
+  format: "Calisthenics + HIIT"
+  playlist_id: "PLJaHHU_W0GfKGC0br21SqG_w8C0gngwP4"
+
+schedule:
+  monday:
+    format: "Calisthenics + HIIT"
+    playlist_id: "PLJaHHU_W0GfKGC0br21SqG_w8C0gngwP4"
+  tuesday:
+    format: "Calisthenics + HIIT"
+    playlist_id: "PLJaHHU_W0GfKGC0br21SqG_w8C0gngwP4"
+  wednesday:
+    format: "Pilates"
+    playlist_id: "PLJaHHU_W0GfJtg8L5k00dH9U-NJwjEPYC"
+  thursday:
+    format: "Tabata"
+    playlist_id: "PLJaHHU_W0GfKBd52DK4cc_OeSTfd-OqKE"
+  friday:
+    format: "Stretching + Mobility"
+    playlist_id: "PLJaHHU_W0GfLQRT15dw1SUieUgXrKQU3k"
