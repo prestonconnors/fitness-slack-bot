@@ -74,42 +74,34 @@ sudo timedatectl set-timezone America/New_York    # adjust as needed
 
 ### Option B — systemd user timer (recommended)
 
-Create `~/.config/systemd/user/fitness-slack-bot.service`:
+Unit files are already in this repo at [deploy/fitness-slack-bot.service](deploy/fitness-slack-bot.service)
+and [deploy/fitness-slack-bot.timer](deploy/fitness-slack-bot.timer). They use `%h` so they
+work for any user as long as the repo is checked out at `~/fitness-slack-bot`.
 
-```ini
-[Unit]
-Description=Pick a fitness video and post it to Slack
-
-[Service]
-Type=oneshot
-WorkingDirectory=%h/fitness-slack-bot
-ExecStart=%h/fitness-slack-bot/.venv/bin/python %h/fitness-slack-bot/daily_fitness.py
-```
-
-Create `~/.config/systemd/user/fitness-slack-bot.timer`:
-
-```ini
-[Unit]
-Description=Daily fitness Slack post (weekdays at 08:55)
-
-[Timer]
-OnCalendar=Mon..Fri 08:55:00
-Persistent=true
-
-[Install]
-WantedBy=timers.target
-```
-
-Enable and start:
+Install, enable, start:
 
 ```bash
+mkdir -p ~/.config/systemd/user
+install -m 0644 deploy/fitness-slack-bot.service ~/.config/systemd/user/fitness-slack-bot.service
+install -m 0644 deploy/fitness-slack-bot.timer   ~/.config/systemd/user/fitness-slack-bot.timer
+
 systemctl --user daemon-reload
 systemctl --user enable --now fitness-slack-bot.timer
 loginctl enable-linger "$USER"     # so the timer runs when you're not logged in
 systemctl --user list-timers | grep fitness
 ```
 
-View logs:
+Run it once now to verify:
+
+```bash
+systemctl --user start fitness-slack-bot.service
+journalctl --user -u fitness-slack-bot.service -n 50
+```
+
+Edit `deploy/fitness-slack-bot.timer`'s `OnCalendar=` line to change the schedule
+(e.g. `Mon..Fri 08:55:00`), then re-install and `systemctl --user daemon-reload`.
+
+View logs anytime:
 
 ```bash
 journalctl --user -u fitness-slack-bot.service -n 50
