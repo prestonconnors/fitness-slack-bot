@@ -15,10 +15,11 @@ set -euo pipefail
 
 # --- Edit these to match your setup ---------------------------------
 SITE_FILE="/etc/nginx/sites-available/prestonconnors.com"
-# Regex (POSIX ERE) matching the rewrite line. Capture group 1 = prefix
-# up to and including the whitespace before the URL; capture group 2 =
-# whitespace + " redirect;" suffix.
-PATTERN='^([[:space:]]*rewrite[[:space:]]+\^/livestream\$[[:space:]]+)[^[:space:]]+([[:space:]]+redirect;[[:space:]]*)$'
+# Literal markers bracketing the URL on the rewrite line.
+# The script finds a line containing PREFIX ... SUFFIX and replaces the bit in
+# the middle with the new URL. Using literal strings avoids regex escaping headaches.
+PREFIX='rewrite ^/livestream$ '
+SUFFIX=' redirect;'
 # --------------------------------------------------------------------
 
 if [[ $# -ne 1 ]]; then
@@ -49,11 +50,30 @@ TMP="$(mktemp)"
 BACKUP="${SITE_FILE}.bak"
 trap 'rm -f "$TMP"' EXIT
 
-# Use awk so we can safely embed the new URL without sed-escaping headaches.
-awk -v new="$NEW_URL" -v pat="$PATTERN" '
-  match($0, pat, m) { print m[1] new m[2]; replaced++; next }
-  { print }
-  END { if (!replaced) { print "no /livestream rewrite line matched" > "/dev/stderr"; exit 67 } }
+# Use awk with literal string indexing (no regex) so the new URL and the
+# existing markers don't have to be escaped.
+awk -v new="$NEW_URL" -v prefix="$PREFIX" -v suffix="$SUFFIX" '
+  {
+    p = index($0, prefix)
+    if (p > 0) {
+      rest = substr($0, p + length(prefix))
+      s = index(rest, suffix)
+      if (s > 0) {
+        head = substr($0, 1, p - 1) prefix
+        tail = substr(rest, s)
+        print head new tail
+        replaced++
+        next
+      }
+    }
+    print
+  }
+  END {
+    if (!replaced) {
+      print "no line containing \"" prefix "...\" " suffix " matched" > "/dev/stderr"
+      exit 67
+    }
+  }
 ' "$SITE_FILE" > "$TMP"
 
 # Bail if nothing changed (avoid a needless reload).
