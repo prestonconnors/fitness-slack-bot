@@ -1,8 +1,8 @@
 [Unit]
-Description=Daily fitness Slack post (weekdays at 08:55 America/New_York)
+Description=Daily fitness Slack post (weekdays at 11:00 America/New_York)
 
 [Timer]
-OnCalendar=Mon..Fri 08:55 America/New_York
+OnCalendar=Mon..Fri 11:00 America/New_York
 Persistent=true
 
 [Install]

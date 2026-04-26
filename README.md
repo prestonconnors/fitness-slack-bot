@@ -59,10 +59,10 @@ the script falls back to picking from the full playlist.
 crontab -e
 ```
 
-Add a line to run weekdays at 08:55 local time:
+Add a line to run weekdays at 11:00 local time:
 
 ```cron
-55 8 * * 1-5 cd /home/preston/fitness-slack-bot && /home/preston/fitness-slack-bot/.venv/bin/python daily_fitness.py >> /home/preston/fitness-slack-bot/cron.log 2>&1
+0 11 * * 1-5 cd /home/preston/fitness-slack-bot && /home/preston/fitness-slack-bot/.venv/bin/python daily_fitness.py >> /home/preston/fitness-slack-bot/cron.log 2>&1
 ```
 
 Make sure the server's timezone is correct:
@@ -99,7 +99,7 @@ journalctl --user -u fitness-slack-bot.service -n 50
 ```
 
 Edit `deploy/fitness-slack-bot.timer`'s `OnCalendar=` line to change the schedule.
-The shipped value `Mon..Fri 08:55 America/New_York` runs at 08:55 Eastern regardless of
+The shipped value `Mon..Fri 11:00 America/New_York` runs at 11:00 Eastern regardless of
 the server's system timezone (handles DST automatically). After editing, re-install and:
 
 ```bash
